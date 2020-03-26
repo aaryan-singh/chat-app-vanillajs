@@ -37,12 +37,25 @@ io.on("connection", socket => {
     io.to(as.room).emit("message", formatMessage(as.name, msg));
   });
 
+  socket.on("typing", data => {
+    const user = getCurrentUser(socket.id);
+    if (data) {
+      socket.broadcast
+        .to(user.room)
+        .emit("addTyping", `${user.name} is typing...`);
+    } else {
+      socket.broadcast.to(user.room).emit("addTyping", "");
+    }
+  });
+
   socket.on("disconnect", () => {
     const as = getCurrentUser(socket.id);
-    io.to(as.room).emit(
-      "message",
-      formatMessage(botName, `${as.name} has left the chat`)
-    );
+    if (as) {
+      io.to(as.room).emit(
+        "message",
+        formatMessage(botName, `${as.name} has left the chat`)
+      );
+    }
   });
 });
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
