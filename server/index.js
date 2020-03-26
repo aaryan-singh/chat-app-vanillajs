@@ -8,7 +8,7 @@ const server = http.createServer(app);
 const io = socketio(server);
 
 const formatMessage = require("./utils/messages");
-const { userJoin, getCurrentUser } = require("./utils/users");
+const { userJoin, getCurrentUser, userLeave } = require("./utils/users");
 
 const PORT = process.env.PORT || 8000;
 const botName = "Chat Bot";
@@ -39,17 +39,19 @@ io.on("connection", socket => {
 
   socket.on("typing", data => {
     const user = getCurrentUser(socket.id);
-    if (data) {
-      socket.broadcast
-        .to(user.room)
-        .emit("addTyping", `${user.name} is typing...`);
-    } else {
-      socket.broadcast.to(user.room).emit("addTyping", "");
+    if (user) {
+      if (data) {
+        socket.broadcast
+          .to(user.room)
+          .emit("addTyping", `${user.name} is typing...`);
+      } else {
+        socket.broadcast.to(user.room).emit("addTyping", "");
+      }
     }
   });
 
   socket.on("disconnect", () => {
-    const as = getCurrentUser(socket.id);
+    const as = userLeave(socket.id);
     if (as) {
       io.to(as.room).emit(
         "message",
