@@ -14,7 +14,8 @@ const PORT = process.env.PORT || 8000;
 const botName = "Chat Bot";
 
 // serve static files by setting static folder
-app.use(express.static(path.join(__dirname, "./client"))); // first middleware, so it's gonna serve
+process.env.PWD = process.cwd();
+app.use(express.static(path.join(process.env.PWD, "./client"))); // first middleware, so it's gonna serve
 
 // Run when a client connects
 io.on("connection", socket => {
