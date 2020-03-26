@@ -7,25 +7,42 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 
+const formatMessage = require("./utils/messages");
+const { userJoin, getCurrentUser } = require("./utils/users");
+
 const PORT = process.env.PORT || 8000;
+const botName = "Chat Bot";
 
 // serve static files by setting static folder
 app.use(express.static(path.join(__dirname, "../client"))); // first middleware, so it's gonna serve
 
 // Run when a client connects
 io.on("connection", socket => {
-  console.log("New WS Connection...");
+  socket.on("joinRoom", ({ name, room }) => {
+    console.log({ name, room, id: socket.id });
+    const user = userJoin({ id: socket.id, name, room });
+    socket.join(user.room);
+    socket.emit("message", formatMessage(botName, "Welcome to chat"));
 
-  socket.emit("message", "Welcome to chat");
-
-  socket.broadcast.emit("message", "User has joined the chat");
+    socket.broadcast
+      .to(user.room)
+      .emit(
+        "message",
+        formatMessage(botName, `${user.name} has joined the chat`)
+      );
+  });
 
   socket.on("userMessage", msg => {
-    io.emit("message", msg);
+    const as = getCurrentUser(socket.id);
+    io.to(as.room).emit("message", formatMessage(as.name, msg));
   });
 
   socket.on("disconnect", () => {
-    io.emit("message", "A user has left the chat");
+    const as = getCurrentUser(socket.id);
+    io.to(as.room).emit(
+      "message",
+      formatMessage(botName, `${as.name} has left the chat`)
+    );
   });
 });
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
